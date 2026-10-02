@@ -1,274 +1,213 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import Navbar from './components/Navbar';
-import SearchBar from './components/SearchBar';
-import MovieGrid from './components/MovieGrid';
-import MovieDetails from './components/MovieDetails';
-import Favorites from './components/Favorites';
-import Loading from './components/Loading';
-import ErrorMessage from './components/ErrorMessage';
-import { searchMovies, getPopularMovies } from './services/movieApi';
-import { Code2, Layers } from './components/Icons';
+import React, { useEffect, useState } from 'react';
+import Navbar from './components/Navbar.jsx';
+import SearchBar from './components/SearchBar.jsx';
+import MovieGrid from './components/MovieGrid.jsx';
+import MovieDetails from './components/MovieDetails.jsx';
+import Favorites from './components/Favorites.jsx';
+import { fetchPopularMovies, searchMovies } from './services/movieApi.js';
+import { RefreshCw } from 'lucide-react';
 
-const POPULAR_SUGGESTIONS = ['Inception', 'Avatar', 'Interstellar', 'Batman', 'Dune'];
+const STORAGE_KEY = 'cinemafind_favorites';
 
 export default function App() {
-  // Navigation & View state
-  const [currentView, setCurrentView] = useState('home'); // 'home' | 'favorites' | 'details'
-  const [previousView, setPreviousView] = useState('home');
-
-  // Search & Movies state
   const [movies, setMovies] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeSearchQuery, setActiveSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [favorites, setFavorites] = useState([]);
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [activeTab, setActiveTab] = useState('home');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Favorites state persisted in localStorage
-  const [favorites, setFavorites] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cinefind_favorites');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // Sync favorites to localStorage
+  // Load saved favorites when the app starts.
   useEffect(() => {
-    try {
-      localStorage.setItem('cinefind_favorites', JSON.stringify(favorites));
-    } catch (err) {
-      console.error('Error saving favorites to localStorage:', err);
-    }
-  }, [favorites]);
+    const saved = localStorage.getItem(STORAGE_KEY);
 
-  // Load popular movies on initial mount
-  const loadPopularMovies = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const results = await getPopularMovies();
-      setMovies(results);
-      setActiveSearchQuery('');
-    } catch (err) {
-      setError(err.message || 'Failed to fetch popular movies from the API.');
-    } finally {
-      setIsLoading(false);
+    if (saved) {
+      try {
+        setFavorites(JSON.parse(saved));
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
     }
   }, []);
 
+  // Save favorites whenever they change.
   useEffect(() => {
-    loadPopularMovies();
-  }, [loadPopularMovies]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites));
+  }, [favorites]);
 
-  // Handle movie search using Fetch API
-  const handleSearch = async (queryToSearch) => {
-    const query = (queryToSearch || searchQuery).trim();
-    if (!query) return;
-
+  // Load popular movies.
+  async function loadPopularMovies() {
     setIsLoading(true);
-    setError(null);
-    setActiveSearchQuery(query);
-    setCurrentView('home');
+    setErrorMessage('');
+    setSearchQuery('');
 
     try {
-      const results = await searchMovies(query);
+      const results = await fetchPopularMovies();
       setMovies(results);
-    } catch (err) {
-      setError(err.message || 'Error executing search query via Fetch API.');
+    } catch (error) {
       setMovies([]);
+      setErrorMessage(error.message);
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  // Clear search and reset to popular movies
-  const handleClearSearch = () => {
-    setSearchQuery('');
-    setActiveSearchQuery('');
+  // Load popular movies when the app opens.
+  useEffect(() => {
     loadPopularMovies();
-  };
+  }, []);
 
-  // Toggle favorite status for a movie
-  const handleToggleFavorite = (movie) => {
-    setFavorites((prev) => {
-      const exists = prev.some((item) => item.id === movie.id);
-      if (exists) {
-        return prev.filter((item) => item.id !== movie.id);
-      } else {
-        return [...prev, movie];
+  // Search TMDB for movies.
+  async function handleSearch(query) {
+    const cleanQuery = query.trim();
+
+    if (!cleanQuery) {
+      loadPopularMovies();
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage('');
+    setSearchQuery(cleanQuery);
+    setSelectedMovie(null);
+    setActiveTab('home');
+
+    try {
+      const results = await searchMovies(cleanQuery);
+      setMovies(results);
+    } catch (error) {
+      setMovies([]);
+      setErrorMessage(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function handleClearSearch() {
+    loadPopularMovies();
+  }
+
+  // Add or remove a movie from favorites.
+  function handleToggleFavorite(movie) {
+    setFavorites((currentFavorites) => {
+      const alreadyFavorite = currentFavorites.some(
+        (item) => item.id === movie.id
+      );
+
+      if (alreadyFavorite) {
+        return currentFavorites.filter((item) => item.id !== movie.id);
       }
-    });
-  };
 
-  // Clear all favorites
-  const handleClearAllFavorites = () => {
-    if (window.confirm('Are you sure you want to remove all favorite movies?')) {
+      return [...currentFavorites, movie];
+    });
+  }
+
+  function handleClearFavorites() {
+    if (window.confirm('Remove all favorite movies?')) {
       setFavorites([]);
     }
-  };
+  }
 
-  // Open movie details
-  const handleSelectMovie = (movie) => {
+  function handleSelectMovie(movie) {
     setSelectedMovie(movie);
-    setPreviousView(currentView === 'details' ? 'home' : currentView);
-    setCurrentView('details');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }
 
-  // Return back from movie details
-  const handleBackFromDetails = () => {
-    setCurrentView(previousView);
+  function handleSelectTab(tab) {
+    setActiveTab(tab);
     setSelectedMovie(null);
-  };
+  }
 
-  // Quick return to home
-  const handleHomeClick = () => {
-    setCurrentView('home');
-    setSelectedMovie(null);
-  };
-
-  const isMovieFavorite = (id) => favorites.some((m) => m.id === id);
+  const isFavorite = selectedMovie
+    ? favorites.some((movie) => movie.id === selectedMovie.id)
+    : false;
 
   return (
     <div className="app-container">
-      {/* Header / Navbar */}
       <Navbar
-        currentView={currentView}
-        setCurrentView={(view) => {
-          setCurrentView(view);
-          if (view !== 'details') setSelectedMovie(null);
-        }}
+        activeTab={activeTab}
+        onSelectTab={handleSelectTab}
         favoritesCount={favorites.length}
-        onHomeClick={handleHomeClick}
       />
 
-      {/* Main App Canvas */}
-      <main className="main-canvas">
-        {/* VIEW: Movie Details */}
-        {currentView === 'details' && selectedMovie && (
+      <main className="main-content">
+        {selectedMovie ? (
           <MovieDetails
             movie={selectedMovie}
-            onBack={handleBackFromDetails}
-            isFavorite={isMovieFavorite(selectedMovie.id)}
+            onBack={() => setSelectedMovie(null)}
+            isFavorite={isFavorite}
             onToggleFavorite={handleToggleFavorite}
           />
-        )}
-
-        {/* VIEW: Favorites */}
-        {currentView === 'favorites' && (
+        ) : activeTab === 'favorites' ? (
           <Favorites
             favorites={favorites}
             onToggleFavorite={handleToggleFavorite}
-            onClearAllFavorites={handleClearAllFavorites}
             onSelectMovie={handleSelectMovie}
-            onExploreMovies={handleHomeClick}
+            onBackToBrowse={() => handleSelectTab('home')}
+            onClearAllFavorites={handleClearFavorites}
           />
-        )}
-
-        {/* VIEW: Home Explorer */}
-        {currentView === 'home' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-            {/* Hero Section */}
+        ) : (
+          <div>
             <div className="hero-section">
-              <h1 className="hero-title">
-                Find Your Next Movie
-              </h1>
-
-              <p className="hero-desc">
-                Discover movies from around the world using the TMDB public REST API and native JavaScript Fetch.
-              </p>
-
-              {/* Search Bar Component */}
-              <SearchBar
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                onSearch={handleSearch}
-                onClear={handleClearSearch}
-                isLoading={isLoading}
-              />
-
-              {/* Quick Suggestion Pills */}
-              <div className="suggestion-bar">
-                <span className="suggestion-label">Popular Searches:</span>
-                {POPULAR_SUGGESTIONS.map((title) => (
-                  <button
-                    key={title}
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery(title);
-                      handleSearch(title);
-                    }}
-                    className="suggestion-pill"
-                  >
-                    {title}
-                  </button>
-                ))}
-              </div>
+              <h1 className="hero-title">CinemaFind</h1>
+              <p className="hero-subtitle">Find your next movie</p>
             </div>
 
-            {/* Error Message */}
-            {error && (
-              <div style={{ width: '100%', margin: '1rem 0' }}>
-                <ErrorMessage
-                  message={error}
-                  onRetry={() => (activeSearchQuery ? handleSearch(activeSearchQuery) : loadPopularMovies())}
-                />
+            <SearchBar
+              onSearch={handleSearch}
+              currentQuery={searchQuery}
+              onClearSearch={handleClearSearch}
+            />
+
+            {errorMessage && (
+              <div className="error-container">
+                <div>
+                  <div className="error-title">Something went wrong</div>
+                  <div className="error-desc">{errorMessage}</div>
+
+                  <button
+                    type="button"
+                    onClick={loadPopularMovies}
+                    className="retry-btn"
+                  >
+                    <RefreshCw size={12} />
+                    <span>Try Again</span>
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* Loading Indicator */}
-            {isLoading && (
-              <div style={{ width: '100%', margin: '2rem 0' }}>
-                <Loading
-                  message={
-                    activeSearchQuery
-                      ? `Searching for "${activeSearchQuery}" via Fetch API...`
-                      : 'Fetching popular movies from TMDB REST API...'
-                  }
-                />
+            {isLoading ? (
+              <div className="loading-indicator">
+                <div className="spinner" />
+                <p>Loading movies from TMDB...</p>
               </div>
-            )}
-
-            {/* Movie Grid */}
-            {!isLoading && !error && (
-              <div style={{ width: '100%', marginTop: '1rem' }}>
-                <MovieGrid
-                  movies={movies}
-                  title={activeSearchQuery ? `Search Results for "${activeSearchQuery}"` : 'Popular Movies'}
-                  isSearchActive={Boolean(activeSearchQuery)}
-                  searchQuery={activeSearchQuery}
-                  favorites={favorites}
-                  onToggleFavorite={handleToggleFavorite}
-                  onSelectMovie={handleSelectMovie}
-                  onClearSearch={handleClearSearch}
-                />
-              </div>
+            ) : (
+              <MovieGrid
+                movies={movies}
+                title={
+                  searchQuery
+                    ? `Search Results for "${searchQuery}"`
+                    : 'Popular Movies'
+                }
+                subtitle={
+                  searchQuery
+                    ? 'Movies matching your search'
+                    : 'Popular movies from TMDB'
+                }
+                favorites={favorites}
+                onToggleFavorite={handleToggleFavorite}
+                onSelectMovie={handleSelectMovie}
+              />
             )}
           </div>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="footer">
-        <div className="footer-content">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>CineFind</span>
-          </div>
-
-          <div className="footer-tags">
-            <span className="footer-tag">
-              <Code2 size={14} style={{ color: 'var(--accent-gold)' }} />
-              <span>Native Fetch API</span>
-            </span>
-            <span>•</span>
-            <span className="footer-tag">
-              <Layers size={14} style={{ color: 'var(--accent-gold)' }} />
-              <span>REST API Consumer</span>
-            </span>
-          </div>
-        </div>
+      <footer className="app-footer">
+        <p>CinemaFind • React + Vite + TMDB REST API</p>
+        <p>Uses JavaScript fetch() and browser localStorage.</p>
       </footer>
     </div>
   );

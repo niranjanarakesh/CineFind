@@ -1,95 +1,88 @@
 import React from 'react';
-import MovieCard from './MovieCard';
-import { Heart, Trash2, ArrowLeft, Film } from './Icons';
+import { Heart, Trash2, ArrowLeft } from 'lucide-react';
+import MovieCard from './MovieCard.jsx';
 
+/**
+ * Favorites Component (Pure CSS - No Tailwind)
+ * 
+ * Displays movies stored in browser localStorage.
+ */
 export default function Favorites({
   favorites,
   onToggleFavorite,
-  onClearAllFavorites,
   onSelectMovie,
-  onExploreMovies,
+  onBackToBrowse,
+  onClearAllFavorites
 }) {
-  // Empty State matching requested design
-  if (!favorites || favorites.length === 0) {
-    return (
-      <div id="favorites-empty-state" className="empty-box">
-        <div className="empty-icon-circle heart">
-          <Heart size={32} />
-        </div>
-
-        <h2 id="favorites-empty-title" className="empty-title">
-          No favorite movies yet.
-        </h2>
-
-        <p className="empty-desc">
-          Search for a movie and add it to your favorites. They will be stored safely in your browser.
-        </p>
-
-        <button
-          id="favorites-explore-btn"
-          type="button"
-          onClick={onExploreMovies}
-          className="empty-btn"
-        >
-          <Film size={16} />
-          <span>Find Movies</span>
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <section id="favorites-section" className="favorites-container">
-      {/* Top Header */}
+    <section className="favorites-container">
+      {/* Header */}
       <div className="favorites-header">
-        <div className="favorites-title-box">
-          <h1 id="favorites-title" className="favorites-title">
-            <Heart size={26} fill="var(--accent-red)" style={{ color: 'var(--accent-red)' }} />
-            <span>My Favorite Movies</span>
-            <span className="fav-badge-num">
-              {favorites.length}
-            </span>
-          </h1>
+        <div className="fav-title-wrap">
+          <div className="fav-icon-box">
+            <Heart size={24} fill="currentColor" />
+          </div>
+          <div>
+            <h1 className="section-title">Favorite Movies</h1>
+            <p className="section-subtitle">
+              Stored locally in browser <code>localStorage</code>
+            </p>
+          </div>
         </div>
 
-        <div className="favorites-actions">
+        <div className="fav-actions">
           <button
-            id="favorites-back-to-home-btn"
-            type="button"
-            onClick={onExploreMovies}
-            className="fav-action-btn"
+            onClick={onBackToBrowse}
+            className="back-btn"
           >
-            <ArrowLeft size={14} />
-            <span>Back to Explorer</span>
+            <ArrowLeft size={16} />
+            <span>Back to Browse</span>
           </button>
 
-          {favorites.length > 1 && (
+          {favorites.length > 0 && (
             <button
-              id="clear-all-favorites-btn"
-              type="button"
               onClick={onClearAllFavorites}
-              className="fav-action-btn fav-clear-btn"
-              title="Remove all favorite movies"
+              className="clear-favs-btn"
+              title="Remove all saved favorites"
             >
-              <Trash2 size={14} />
+              <Trash2 size={16} />
               <span>Clear All</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Grid of Saved Movies */}
-      <div id="favorites-movie-grid" className="movies-grid">
-        {favorites.map((movie) => (
-          <MovieCard
-            key={movie.id}
-            movie={movie}
-            isFavorite={true}
-            onToggleFavorite={onToggleFavorite}
-            onSelectMovie={onSelectMovie}
-          />
-        ))}
-      </div>
+      {/* Empty State */}
+      {favorites.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon" style={{ color: 'var(--primary)', backgroundColor: 'var(--primary-light)' }}>
+            <Heart size={28} />
+          </div>
+          <h2 className="empty-title">No Favorites Yet</h2>
+          <p className="empty-text">
+            You haven't saved any movies yet. Click the heart icon on any movie card or details page to add it to your personal favorites list!
+          </p>
+          <button
+            onClick={onBackToBrowse}
+            className="action-btn"
+          >
+            Explore Movies
+          </button>
+        </div>
+      ) : (
+        /* Favorites Grid */
+        <div className="movie-grid">
+          {favorites.map((movie) => (
+            <MovieCard
+              key={movie.id}
+              movie={movie}
+              isFavorite={true}
+              onToggleFavorite={onToggleFavorite}
+              onSelectMovie={onSelectMovie}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

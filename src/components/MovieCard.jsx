@@ -1,98 +1,87 @@
-import React, { useState } from 'react';
-import { Star, Heart, Film } from './Icons';
+import React from 'react';
+import { Star, Heart } from 'lucide-react';
+import { getPosterUrl } from '../services/movieApi.js';
 
-export default function MovieCard({
-  movie,
-  isFavorite,
-  onToggleFavorite,
-  onSelectMovie,
-}) {
-  const [imgError, setImgError] = useState(false);
+/**
+ * MovieCard Component (Pure CSS - No Tailwind)
+ * 
+ * Displays movie poster, title, release year, TMDB rating, short synopsis,
+ * favorite heart button, and click-to-view details.
+ */
+export default function MovieCard({ movie, isFavorite, onToggleFavorite, onSelectMovie }) {
+  // Extract 4-digit release year
+  const releaseYear = movie.release_date ? movie.release_date.split('-')[0] : 'N/A';
+
+  // Format rating score (e.g. 8.4)
+  const rating = typeof movie.vote_average === 'number'
+    ? movie.vote_average.toFixed(1)
+    : 'N/A';
+
+  const posterSrc = getPosterUrl(movie.poster_path);
 
   const handleFavoriteClick = (e) => {
-    e.stopPropagation(); // Prevent opening card details
+    e.stopPropagation(); // Prevents opening movie details
     onToggleFavorite(movie);
   };
 
   return (
-    <article
-      id={`movie-card-${movie.id}`}
+    <div
       onClick={() => onSelectMovie(movie)}
       className="movie-card"
     >
       {/* Poster Image Container */}
       <div className="card-poster-wrapper">
-        {movie.posterUrl && !imgError ? (
-          <img
-            src={movie.posterUrl}
-            alt={movie.title}
-            onError={() => setImgError(true)}
-            loading="lazy"
-            className="card-poster-img"
+        <img
+          src={posterSrc}
+          alt={movie.title || 'Movie Poster'}
+          loading="lazy"
+          className="card-poster"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = 'https://placehold.co/500x750/151d30/94a3b8?text=No+Poster';
+          }}
+        />
+
+        {/* Favorite Heart Button */}
+        <button
+          type="button"
+          onClick={handleFavoriteClick}
+          className={`card-favorite-btn ${isFavorite ? 'active' : ''}`}
+          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <Heart
+            size={18}
+            fill={isFavorite ? 'currentColor' : 'none'}
           />
-        ) : (
-          <div className="poster-fallback">
-            <Film size={40} />
-            <span>No Poster Available</span>
-          </div>
-        )}
+        </button>
 
-        {/* Top Badges */}
-        <div className="card-overlay-top">
-          {/* Rating */}
-          <div className="card-rating-badge">
-            <Star size={13} fill="currentColor" />
-            <span>{movie.rating}</span>
-          </div>
-
-          {/* Favorite Heart Button */}
-          <button
-            id={`fav-btn-${movie.id}`}
-            type="button"
-            onClick={handleFavoriteClick}
-            className={`card-fav-btn ${isFavorite ? 'is-fav' : ''}`}
-            title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-          >
-            <Heart size={16} fill={isFavorite ? 'currentColor' : 'none'} />
-          </button>
+        {/* Rating Badge */}
+        <div className="card-rating-badge">
+          <Star size={13} fill="currentColor" />
+          <span>{rating}</span>
         </div>
 
-        {/* Release Year Pill */}
-        {movie.releaseYear && movie.releaseYear !== 'N/A' && (
-          <span className="card-year-pill">{movie.releaseYear}</span>
-        )}
+        {/* Year Badge */}
+        <div className="card-year-badge">
+          {releaseYear}
+        </div>
       </div>
 
-      {/* Card Body */}
+      {/* Card Content */}
       <div className="card-body">
         <div>
-          <h3
-            id={`movie-title-${movie.id}`}
-            className="card-title"
-            title={movie.title}
-          >
+          <h3 className="card-title" title={movie.title}>
             {movie.title}
           </h3>
-
           <p className="card-overview">
-            {movie.overview}
+            {movie.overview || 'No synopsis provided for this title.'}
           </p>
         </div>
 
-        {/* Card Footer Action */}
         <div className="card-footer">
-          <span>Click for details →</span>
-
-          <button
-            type="button"
-            onClick={handleFavoriteClick}
-            className={`card-footer-fav ${isFavorite ? 'is-fav' : ''}`}
-          >
-            <Heart size={14} fill={isFavorite ? 'currentColor' : 'none'} />
-            <span>{isFavorite ? 'Favorited' : 'Favorite'}</span>
-          </button>
+          <span>View Details &rarr;</span>
         </div>
       </div>
-    </article>
+    </div>
   );
 }

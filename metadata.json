@@ -1,8 +1,0 @@
-{
-  "name": "Remix CineFind",
-  "description": "A dark cinematic movie finder web application demonstrating REST API integration using the Fetch API.",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}

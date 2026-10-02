@@ -1,95 +1,65 @@
 import React from 'react';
-import MovieCard from './MovieCard';
-import { Film, SearchX } from './Icons';
+import MovieCard from './MovieCard.jsx';
+import { Film } from 'lucide-react';
 
+/**
+ * MovieGrid Component (Pure CSS - No Tailwind)
+ * 
+ * Renders a responsive CSS grid of MovieCard components,
+ * header titles, and empty states.
+ */
 export default function MovieGrid({
   movies,
-  title = 'Search Results',
-  isSearchActive,
-  searchQuery,
-  favorites,
+  title,
+  subtitle,
+  favorites = [],
   onToggleFavorite,
-  onSelectMovie,
-  onClearSearch,
+  onSelectMovie
 }) {
-  const favoriteIds = new Set(favorites.map((m) => m.id));
+  const isMovieFavorite = (movieId) => {
+    return favorites.some((fav) => fav.id === movieId);
+  };
 
-  // "No movies found" state
-  if (isSearchActive && (!movies || movies.length === 0)) {
-    return (
-      <div id="no-movies-found" className="empty-box">
-        <div className="empty-icon-circle search">
-          <SearchX size={32} />
-        </div>
-        <h3 className="empty-title">No movies found</h3>
-        <p className="empty-desc">
-          We couldn't find any results matching{' '}
-          <span style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>
-            "{searchQuery}"
-          </span>
-          . Please try checking your spelling or searching for another title.
-        </p>
-        {onClearSearch && (
-          <button
-            id="clear-search-fallback-btn"
-            onClick={onClearSearch}
-            className="empty-btn"
-          >
-            Clear Search & Show Popular
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  // Regular grid
   return (
-    <section id="movie-grid-section" className="grid-section">
-      <div className="grid-header">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+    <section className="movie-section">
+      {/* Header */}
+      {title && (
+        <div className="section-header">
           <div>
-            <h2 id="grid-title" className="grid-title">
-              <Film size={22} style={{ color: 'var(--accent-gold)' }} />
-              {title}
-            </h2>
-            {isSearchActive && searchQuery && (
-              <p className="grid-subtitle">
-                Found {movies.length} {movies.length === 1 ? 'title' : 'titles'} for{' '}
-                <span style={{ color: 'var(--accent-gold)', fontWeight: 500 }}>
-                  "{searchQuery}"
-                </span>
-              </p>
-            )}
+            <h2 className="section-title">{title}</h2>
+            {subtitle && <p className="section-subtitle">{subtitle}</p>}
           </div>
-
-          {isSearchActive && onClearSearch && (
-            <button
-              onClick={onClearSearch}
-              style={{
-                fontSize: '0.8rem',
-                color: 'var(--text-secondary)',
-                textDecoration: 'underline',
-                textUnderlineOffset: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              View Popular Movies
-            </button>
-          )}
+          <span className="movie-count-tag">
+            {movies.length} {movies.length === 1 ? 'movie' : 'movies'}
+          </span>
         </div>
-      </div>
+      )}
 
-      <div id="movies-grid" className="movies-grid">
-        {movies.map((movie) => (
-          <MovieCard
-            key={movie.id}
-            movie={movie}
-            isFavorite={favoriteIds.has(movie.id)}
-            onToggleFavorite={onToggleFavorite}
-            onSelectMovie={onSelectMovie}
-          />
-        ))}
-      </div>
+      {/* Empty State */}
+      {movies.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-icon">
+            <Film size={28} />
+          </div>
+          <h3 className="empty-title">No movies found</h3>
+          <p className="empty-text">
+            We couldn't find any movies matching your query. Try checking your spelling or search for popular titles like Inception, Avatar, or Batman.
+          </p>
+        </div>
+      ) : (
+        /* Responsive Grid */
+        <div className="movie-grid">
+          {movies.map((movie) => (
+            <MovieCard
+              key={movie.id}
+              movie={movie}
+              isFavorite={isMovieFavorite(movie.id)}
+              onToggleFavorite={onToggleFavorite}
+              onSelectMovie={onSelectMovie}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

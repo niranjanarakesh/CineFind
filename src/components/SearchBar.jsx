@@ -1,65 +1,65 @@
-import React from 'react';
-import { Search, X } from './Icons';
+import React, { useState } from 'react';
+import { Search, X } from 'lucide-react';
 
-export default function SearchBar({
-  searchQuery,
-  setSearchQuery,
-  onSearch,
-  onClear,
-  isLoading,
-}) {
+/**
+ * SearchBar Component (Pure CSS - No Tailwind)
+ * 
+ * Demonstrates:
+ * - Controlled input with useState()
+ * - Form submission handling with e.preventDefault()
+ * - Callback prop to trigger search in parent component
+ */
+export default function SearchBar({ onSearch, currentQuery, onClearSearch }) {
+  // Local state for the text typed into the search box
+  const [searchTerm, setSearchTerm] = useState(currentQuery || '');
+
+  // Form submission handler
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      onSearch(searchQuery.trim());
+    if (searchTerm.trim() !== '') {
+      onSearch(searchTerm.trim());
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleSubmit(e);
+  // Clear search field handler
+  const handleClear = () => {
+    setSearchTerm('');
+    if (onClearSearch) {
+      onClearSearch();
     }
   };
 
   return (
-    <div className="search-wrapper">
+    <div className="search-container">
       <form onSubmit={handleSubmit} className="search-form">
-        {/* Search Icon */}
-        <div className="search-icon-pos">
-          <Search size={18} />
+        <div className="search-input-wrapper">
+          <Search className="search-icon" size={20} />
+          
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search movies (e.g. Inception, Avatar, Batman)..."
+            className="search-input"
+          />
+
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="clear-search-btn"
+              title="Clear search"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
 
-        {/* Input */}
-        <input
-          id="movie-search-input"
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Search for a movie (e.g., Inception, Avatar, Interstellar)..."
-          className="search-input"
-        />
-
-        {/* Clear Button */}
-        {searchQuery && (
-          <button
-            id="search-clear-btn"
-            type="button"
-            onClick={onClear}
-            className="search-clear-btn"
-            title="Clear search"
-          >
-            <X size={16} />
-          </button>
-        )}
-
-        {/* Search Button */}
         <button
-          id="search-submit-btn"
           type="submit"
-          disabled={isLoading || !searchQuery.trim()}
           className="search-submit-btn"
         >
+          <Search size={18} />
           <span>Search</span>
         </button>
       </form>

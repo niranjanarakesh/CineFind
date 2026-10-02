@@ -1,61 +1,51 @@
 import React from 'react';
-import { Film, Heart, Home, Sparkles } from './Icons';
+import { Film, Heart, Home } from 'lucide-react';
 
-export default function Navbar({ currentView, setCurrentView, favoritesCount, onHomeClick }) {
+export default function Navbar({ activeTab, onSelectTab, favoritesCount }) {
   return (
     <header className="navbar">
-      <div className="nav-content">
-        {/* Brand Logo */}
+      <div className="nav-inner">
         <button
-          id="nav-brand-btn"
-          onClick={onHomeClick}
-          className="nav-brand"
+          type="button"
+          className="brand-section"
+          onClick={() => onSelectTab('home')}
         >
-          <div className="brand-icon-box">
-            <Film size={20} />
+          <div className="brand-icon">
+            <Film size={22} />
           </div>
-          <div>
-            <span className="brand-title">
-              Cine<span>Find</span>
-            </span>
-            <span className="brand-subtitle">
-              TMDB Movie Finder
-            </span>
+
+          <div className="brand-title-wrap">
+            <div className="brand-title-row">
+              <span className="brand-name">CinemaFind</span>
+              <span className="brand-badge">TMDB</span>
+            </div>
+            <span className="brand-subtitle">Find your next movie</span>
           </div>
         </button>
 
-        {/* Navigation Tabs */}
-        <nav className="nav-links">
+        <nav className="nav-actions">
           <button
-            id="nav-home-btn"
-            onClick={onHomeClick}
-            className={`nav-btn ${currentView === 'home' ? 'active-home' : ''}`}
+            type="button"
+            onClick={() => onSelectTab('home')}
+            className={`nav-btn ${activeTab === 'home' ? 'active' : ''}`}
           >
-            <Home size={16} />
+            <Home size={18} />
             <span>Home</span>
           </button>
 
           <button
-            id="nav-favorites-btn"
-            onClick={() => setCurrentView('favorites')}
-            className={`nav-btn ${currentView === 'favorites' ? 'active-fav' : ''}`}
+            type="button"
+            onClick={() => onSelectTab('favorites')}
+            className={`nav-btn ${activeTab === 'favorites' ? 'active' : ''}`}
           >
-            <Heart size={16} fill={favoritesCount > 0 ? '#ef4444' : 'none'} />
+            <Heart size={18} fill={favoritesCount > 0 ? 'currentColor' : 'none'} />
             <span>Favorites</span>
+
             {favoritesCount > 0 && (
-              <span id="favorites-counter-badge" className="badge-counter">
-                {favoritesCount}
-              </span>
+              <span className="nav-count-badge">{favoritesCount}</span>
             )}
           </button>
         </nav>
-
-        {/* API Indicator */}
-        <div className="nav-api-badge" title="Consuming TMDB REST API via native browser Fetch">
-          <span className="status-dot" />
-          <span>API: <strong>TMDB REST (Fetch)</strong></span>
-          <Sparkles size={14} style={{ color: 'var(--accent-gold)' }} />
-        </div>
       </div>
     </header>
   );
